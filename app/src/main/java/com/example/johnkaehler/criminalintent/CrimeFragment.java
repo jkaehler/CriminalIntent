@@ -2,6 +2,9 @@ package com.example.johnkaehler.criminalintent;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
@@ -60,6 +63,32 @@ public class CrimeFragment extends Fragment {
             mCrime.setDate(date);
             mCrime.setDate(date);
             updateDate();
+        }
+        else if(requestCode == REQUEST_CONTACT && data != null){
+            Uri contactUri = data.getData();
+            // Specify which fields you want your query to return
+            // values for
+            String[] queryFields = new String[]{
+                ContactsContract.Contacts.DISPLAY_NAME
+            };
+            //Perform your query - the contactUri is like a "where" clause here
+            Cursor c = getActivity().getContentResolver()
+                    .query(contactUri, queryFields, null, null, null);
+            try{
+                //double check that you actually got results
+                if(c.getCount() == 0){
+                    return;
+                }
+                //Pull out the first column of the first row of data - that is your suspect name
+                c.moveToFirst();
+                String suspect = c.getString(0);
+                mCrime.setSuspect(suspect);
+                mSuspectButton.setTag(suspect);
+
+            }
+            finally{
+                c.close();
+            }
         }
     }
 
@@ -171,6 +200,12 @@ public class CrimeFragment extends Fragment {
 
         if(mCrime.getSuspect() != null){
             mSuspectButton.setTag(mCrime.getSuspect());
+        }
+
+        PackageManager packageManager = getActivity().getPackageManager();
+        if(packageManager.resolveActivity(pickContact,
+                PackageManager.MATCH_DEFAULT_ONLY) == null){
+            mSuspectButton.setEnabled(false);
         }
 
         return v;
